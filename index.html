@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Descubridor de Números Metálicos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX for rendering mathematical formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* green-50 */
+            color: #1f2937; /* gray-800 */
+        }
+        
+        .metal-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .gold-gradient {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tab-btn {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tab-btn.active {
+            background-color: #047857; /* emerald-700 */
+            color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .screen-content {
+            display: none;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .screen-content.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            border-bottom: 1px dotted #059669;
+            cursor: help;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 260px;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 8px 12px;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -130px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8125rem;
+            font-weight: normal;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+    <!-- Header Principal -->
+    <header class="bg-emerald-800 text-white p-6 shadow-lg">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="text-center md:text-left">
+                <h1 class="text-3xl font-bold tracking-tight">Descubridor de Números Metálicos</h1>
+                <p class="text-emerald-200 text-sm mt-1">Explora las constantes metálicas, ecuaciones y sus sucesiones asociadas</p>
+            </div>
+            <div class="flex items-center gap-2 bg-emerald-900/60 px-4 py-2 rounded-full border border-emerald-700/50">
+                <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-xs font-semibold text-emerald-100 uppercase tracking-wider">Ecuación: $x^2 - nx - 1 = 0$</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Barra de Navegación por Pantallas (Etiquetas) -->
+    <nav class="bg-emerald-900 sticky top-0 z-30 shadow-md border-t border-emerald-700/40">
+        <div class="max-w-5xl mx-auto px-4">
+            <div class="flex overflow-x-auto space-x-2 py-3 scrollbar-none text-sm font-medium" id="tab-container">
+                <button onclick="switchScreen('screen-calculator')" id="btn-screen-calculator" class="tab-btn active flex items-center gap-2 px-4 py-2.5 rounded-lg text-emerald-100 hover:bg-emerald-800/70 whitespace-nowrap">
+                    <span>🧮</span>
+                    <span>Calculadora Interactivas</span>
+                </button>
+                <button onclick="switchScreen('screen-sequence')" id="btn-screen-sequence" class="tab-btn flex items-center gap-2 px-4 py-2.5 rounded-lg text-emerald-100 hover:bg-emerald-800/70 whitespace-nowrap">
+                    <span>🔄</span>
+                    <span>Sucesión Asociadas</span>
+                </button>
+                <button onclick="switchScreen('screen-table')" id="btn-screen-table" class="tab-btn flex items-center gap-2 px-4 py-2.5 rounded-lg text-emerald-100 hover:bg-emerald-800/70 whitespace-nowrap">
+                    <span>📊</span>
+                    <span>Catálogo de Metales ($n=0 \dots 9$)</span>
+                </button>
+                <button onclick="switchScreen('screen-theory')" id="btn-screen-theory" class="tab-btn flex items-center gap-2 px-4 py-2.5 rounded-lg text-emerald-100 hover:bg-emerald-800/70 whitespace-nowrap">
+                    <span>📚</span>
+                    <span>¿Qué son?</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-5xl mx-auto p-4 md:p-8 w-full">
+        
+        <!-- ==================== PANTALLA 1: CALCULADORA ==================== -->
+        <div id="screen-calculator" class="screen-content active space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                    <span class="text-emerald-600">🧮</span> Calculadora de Números Metálicos
+                </h2>
+                <p class="text-gray-600 text-sm">
+                    Ajusta el valor de la constante entero <strong class="text-emerald-700">$n \ge 0$</strong> para generar el número metálico correspondiente y descubrir sus fórmulas.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Selector de Valor n -->
+                <div class="bg-white p-6 rounded-2xl shadow-md border-t-4 border-emerald-600 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Parámetro de Entrada</h3>
+                        
+                        <div class="mb-6 bg-emerald-50/60 p-4 rounded-xl border border-emerald-100">
+                            <label for="n-slider" class="block text-sm font-medium text-gray-700 mb-2">
+                                Desliza para seleccionar <span class="font-mono font-bold text-emerald-700 text-base">n</span> (0 a 10):
+                            </label>
+                            <div class="flex items-center">
+                                <input type="range" id="n-slider" min="0" max="10" value="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                                <span id="n-display" class="ml-4 w-12 text-center font-bold text-2xl text-emerald-800 bg-white shadow-sm py-1 rounded-lg border border-emerald-200">1</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 flex items-center justify-between gap-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                            <label for="n-number" class="text-xs md:text-sm font-medium text-gray-700">O introduce manualmente $n \ge 0$:</label>
+                            <input type="number" id="n-number" min="0" max="1000" value="1" class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-center font-bold text-lg">
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-800 text-white p-4 rounded-xl shadow-inner mt-4">
+                        <p class="text-xs text-emerald-200 font-semibold uppercase tracking-wider mb-1">Ecuación Cuadrática Resultante:</p>
+                        <div class="font-bold text-xl text-center text-white min-h-[32px]" id="equation-display"></div>
+                    </div>
+                </div>
+
+                <!-- Card de Resultado Metálico -->
+                <div class="metal-card p-6 rounded-2xl relative overflow-hidden flex flex-col justify-between items-center border border-gray-200 shadow-lg min-h-[320px]">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-emerald-100 rounded-full opacity-40 pointer-events-none"></div>
+                    <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-amber-100 rounded-full opacity-40 pointer-events-none"></div>
+
+                    <div class="text-center w-full">
+                        <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest block mb-1">Resultado del Cálculo</span>
+                        <div id="metal-name" class="text-2xl font-bold text-center gold-gradient min-h-[36px]">
+                            Número de Oro (Áureo) 🥇
+                        </div>
+                    </div>
+
+                    <div class="bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-inner border border-emerald-100 w-full text-center my-3">
+                        <span class="text-xs text-gray-500 block mb-1 font-medium">Valor Decimal Aproximado:</span>
+                        <span id="metal-value" class="text-3xl md:text-4xl font-mono font-extrabold text-emerald-950 break-all">
+                            1.6180339...
+                        </span>
+                    </div>
+
+                    <div class="w-full text-center space-y-3">
+                        <div class="bg-emerald-50/80 py-2 px-4 rounded-xl border border-emerald-200 inline-block w-full">
+                            <span class="text-xs text-emerald-700 block font-medium mb-1">Fórmula Exacta (Radical):</span>
+                            <div id="exact-formula" class="font-bold text-emerald-900 text-lg"></div>
+                        </div>
+                        <div id="metal-note" class="text-xs text-gray-600 italic bg-white p-3 rounded-xl border border-gray-200 shadow-sm text-left">
+                            Aparece en la naturaleza, el arte y la geometría del pentágono.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PANTALLA 2: SUCESIÓN ASOCIADA ==================== -->
+        <div id="screen-sequence" class="screen-content space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-1 flex items-center gap-2">
+                            <span class="text-emerald-600">🔄</span> Sucesiones Gobernadas por Números Metálicos
+                        </h2>
+                        <p class="text-gray-600 text-sm">
+                            Así como el Número de Oro ($n=1$) da origen a la sucesión de Fibonacci, cada valor de $n$ crea su propia sucesión recurrente.
+                        </p>
+                    </div>
+                    <div class="bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 text-emerald-900 text-xs font-bold font-mono">
+                        Fórmula: $S_k = n \cdot S_{k-1} + S_{k-2}$
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200 space-y-6">
+                <div>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            Términos Generados para $n =$ <span id="seq-n-val" class="text-emerald-600 font-bold">1</span>
+                        </h3>
+                        <p class="text-xs text-gray-500">Condiciones iniciales: $S_0 = 0, \quad S_1 = 1$</p>
+                    </div>
+
+                    <!-- Selector de número de términos (hasta 20) -->
+                    <div class="bg-emerald-50/60 p-4 rounded-xl border border-emerald-100 mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <label for="terms-count-slider" class="text-xs md:text-sm font-medium text-gray-700">
+                            Número de términos a generar: <span id="terms-count-display" class="font-bold text-emerald-800 text-base">12</span> (hasta 20)
+                        </label>
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <span class="text-xs text-gray-500 font-mono font-bold">5</span>
+                            <input type="range" id="terms-count-slider" min="5" max="20" value="12" class="w-full sm:w-48 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                            <span class="text-xs text-gray-500 font-mono font-bold">20</span>
+                        </div>
+                    </div>
+                    
+                    <div id="sequence-terms" class="flex flex-wrap gap-2.5 font-mono text-sm max-h-80 overflow-y-auto p-1">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-5 rounded-xl border border-emerald-200 shadow-sm space-y-2">
+                    <h4 class="font-bold text-emerald-900 text-sm uppercase tracking-wider flex items-center gap-1.5">
+                        <span>🎯</span> Propiedad de Convergencia
+                    </h4>
+                    <p class="text-xs text-emerald-800 leading-relaxed">
+                        A medida que avanzamos en la sucesión, la división entre dos términos consecutivos ($\frac{S_k}{S_{k-1}}$) se aproxima cada vez más rápido al número metálico exacto.
+                    </p>
+                    <div class="mt-3 bg-white p-3 rounded-lg border border-emerald-200 font-mono text-xs md:text-sm text-emerald-950 font-semibold" id="sequence-ratio">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PANTALLA 3: CATÁLOGO DE METALES ==================== -->
+        <div id="screen-table" class="screen-content space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-1 flex items-center gap-2">
+                        <span class="text-emerald-600">📊</span> Catálogo de la Familia de Números Metálicos
+                    </h2>
+                    <p class="text-gray-600 text-sm">
+                        Resumen comparativo de los primeros diez números metálicos ($n = 0$ a $n = 9$), sus nombres tradicionales y sus propiedades geométricas o algebraicas.
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-600">
+                        <thead class="text-xs text-emerald-900 uppercase bg-emerald-100/70 border-b border-emerald-200">
+                            <tr>
+                                <th scope="col" class="px-4 py-3.5 font-mono text-center">n</th>
+                                <th scope="col" class="px-5 py-3.5 font-bold">Nombre Tradicional</th>
+                                <th scope="col" class="px-5 py-3.5">Fórmula Exacta</th>
+                                <th scope="col" class="px-5 py-3.5 font-mono">Valor Decimal</th>
+                                <th scope="col" class="px-5 py-3.5">Propiedad / Curiosidad</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 text-xs md:text-sm">
+                            <tr class="hover:bg-emerald-50/50 transition-colors cursor-pointer" onclick="selectMetalFromTable(0)">
+                                <td class="px-4 py-3 font-bold font-mono text-center text-emerald-700">0</td>
+                                <td class="px-5 py-3 font-semibold text-gray-700">Número de Platino ⚪</td>
+                                <td class="px-5 py-3">$1$</td>
+                                <td class="px-5 py-3 font-mono">1.00000...</td>
+                                <td class="px-5 py-3 text-xs text-gray-600">Resultado entero racional ($x^2 - 1 = 0$).</td>
+                            </tr>
+                            <tr class="hover:bg-amber-100/50 transition-colors bg-amber-50/50 cursor-pointer" onclick="selectMetalFromTable(1)">
+                                <td class="px-4 py-3 font-bold font-mono text-center text-amber-700">1</td>
+                                <td class="px-5 py-3 font-bold text-amber-900">Número de Oro (Áureo) 🥇</td>
+                                <td class="px-5 py-3">$\frac{1 + \sqrt{5}}{2}$</td>
+                                <td class="px-5 py-3 font-mono font-semibold">1.61803...</td>
+                                <td class="px-5 py-3 text-xs text-gray-700">Sucesión de Fibonacci. Proporción clásica en arte y naturaleza.</td>
+                            </tr>
+                            <tr class="hover:bg-emerald-50/50 transition-colors cursor-pointer" onclick="selectMetalFromTable(2)">
+                                <td class="px-4 py-3 font-bold font-mono text-center text-slate-700">2</td>
+                                <td class="px-5 py-3 font-semibold text-slate-800">Número de Plata 🥈</td>
+                                <td class="px-5 py-3">$1 + \sqrt{2}$</td>
+                                <td class="px-5 py-3 font-mono">2.41421...</td>
+                                <td class="px-5 py-3 text-xs text-gray-600">Sucesión de Pell. Diámetro exacto de un octágono regular de lado 1.</td>
+                            </tr>
+                            <tr class="hover:bg-emerald-50/50 transition-colors cursor-pointer" onclick="selectMetalFromTable(3)">
+                                <td class="px-4 py-3 font-bold font-mono text-center text-amber-800">3</td>
+                                <td class="px-5 py-3 font-semibold text-amber-900">Número de Bronce 🥉</td>
+                                <td class="px-5 py-3">$\frac{3 + \sqrt{13}}{2}$</td>
+                                <td class="px-5 py-3 font-mono">3.30277...</td>
+                                <td class="px-5 py-3 text-xs text-gray-600">Genera la sucesión $S_k = 3S_{k-1} + S_{k-2}$.</td>
+                            </tr>
+                            <tr class="hover:bg-emerald-50/50 transition-colors cursor-pointer" onclick="selectMetalFromTable(4)">
+                                <td class="px-4 py-3 font-bold font-mono text-center text-orange-800">4</td>
+                                <td class="px-5 py-3 font-semibold text-orange-800">Número de Cobre ⛏️</td>
+                                <td class="px-5 py-3">$2 + \sqrt{5}$</td>
+                                <td class="px-5 py-3 font-mono">4.23606...</td>
+                                <td class="px-5 py-3 text-xs text-gray-600">Equivale exactamente a $\phi^3$ (Cubo de la proporción áurea).</td>
+                            </tr>
+                            <tr class="hover:bg-emerald-50/50 transition-colors cursor-pointer" onclick="selectMetalFromTable(5)">
+                                <td class="px-4 py-3 font-bold font-mono text-center text-slate-600">5</td>
+                                <td class="px-5 py-3 font-semibold text-slate-700">Número de Níquel 🪙</td>
+                                <td class="px-5 py-3">$\frac{5 + \sqrt{29}}{2}$</td>
+                                <td class="px-5 py-3 font-mono">5.23606...</td>
+                                <td class="px-5 py-3 text-xs text-gray-600">Su parte decimal coincide exactamente con la del número de cobre.</td>
+                            </tr>
+                            <tr class="hover:bg-emerald-50/50 transition-colors cursor-pointer" onclick="selectMetalFromTable(6)">
+                                <td class="px-4 py-3 font-bold font-mono text-center text-gray-500">6</td>
+                                <td class="px-5 py-3 font-semibold text-gray-600">Número de Aluminio 🥫</td>
+                                <td class="px-5 py-3">$3 + \sqrt{10}$</td>
+                                <td class="px-5 py-3 font-mono">6.16227...</td>
+                                <td class="px-5 py-3 text-xs text-gray-600">Sucesión recurrente con coeficiente 6.</td>
+                            </tr>
+                            <tr class="hover:bg-emerald-50/50 transition-colors cursor-pointer" onclick="selectMetalFromTable(7)">
+                                <td class="px-4 py-3 font-bold font-mono text-center text-red-900">7</td>
+                                <td class="px-5 py-3 font-semibold text-red-900">Número de Hierro ⚔️</td>
+                                <td class="px-5 py-3">$\frac{7 + \sqrt{53}}{2}$</td>
+                                <td class="px-5 py-3 font-mono">7.14005...</td>
+                                <td class="px-5 py-3 text-xs text-gray-600">Representado por $[7; 7, 7, 7\dots]$ en fracción continua.</td>
+                            </tr>
+                            <tr class="hover:bg-emerald-50/50 transition-colors cursor-pointer" onclick="selectMetalFromTable(8)">
+                                <td class="px-4 py-3 font-bold font-mono text-center text-slate-800">8</td>
+                                <td class="px-5 py-3 font-semibold text-slate-800">Número de Estaño 🪨</td>
+                                <td class="px-5 py-3">$4 + \sqrt{17}$</td>
+                                <td class="px-5 py-3 font-mono">8.12310...</td>
+                                <td class="px-5 py-3 text-xs text-gray-600">Sucesión de crecimiento rápido con factor 8.</td>
+                            </tr>
+                            <tr class="hover:bg-emerald-50/50 transition-colors cursor-pointer" onclick="selectMetalFromTable(9)">
+                                <td class="px-4 py-3 font-bold font-mono text-center text-blue-950">9</td>
+                                <td class="px-5 py-3 font-semibold text-blue-950">Número de Plomo ⚓</td>
+                                <td class="px-5 py-3">$\frac{9 + \sqrt{85}}{2}$</td>
+                                <td class="px-5 py-3 font-mono">9.10977...</td>
+                                <td class="px-5 py-3 text-xs text-gray-600">Último número metallic con nombre de metal elemental clásico.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PANTALLA 4: TEORÍA Y FRACCIONES CONTINUAS ==================== -->
+        <div id="screen-theory" class="screen-content space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                    <span class="text-emerald-600">📚</span> Fundamentos Teóricos de los Números Metálicos
+                </h2>
+                <p class="text-gray-600 text-sm leading-relaxed">
+                    Los números metálicos son una familia infinita de proporciones irracionales definidas geométricamente y algebraicamente a partir de ecuaciones cuadráticas sencillas.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Tarjeta 1: La Ecuación Cuadrática -->
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-emerald-900 mb-3">1. Definición Algebraica</h3>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-4">
+                            Todo número metálico es la raíz positiva única de la ecuación de segundo grado:
+                        </p>
+                        <div class="bg-emerald-50 py-3 px-4 rounded-xl text-center text-lg font-bold border border-emerald-200 text-emerald-950 mb-4 overflow-x-auto">
+                            $$x^2 - n \cdot x - 1 = 0$$
+                        </div>
+                        <p class="text-xs text-gray-600 leading-relaxed">
+                            Aplicando la fórmula general de la ecuación cuadrática $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$, obtenemos la expresión analítica universal:
+                        </p>
+                        <div class="bg-gray-50 py-2.5 px-4 rounded-lg text-center text-sm font-semibold border border-gray-200 text-gray-800 mt-2">
+                            $$x = \frac{n + \sqrt{n^2 + 4}}{2}$$
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta 2: Fracciones Continuas -->
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-emerald-900 mb-3">2. Fracciones Continuas Infinitas</h3>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-4">
+                            Una de las características más elegantes de estos números es su expansión en representación de fracción continua:
+                        </p>
+                        <div class="bg-emerald-50 py-3 px-4 rounded-xl text-center text-base md:text-lg font-bold border border-emerald-200 text-emerald-950 mb-4 overflow-x-auto">
+                            $$[n; n, n, n, \dots] = n + \frac{1}{n + \frac{1}{n + \frac{1}{n + \dots}}}$$
+                        </div>
+                        <p class="text-xs text-gray-600 leading-relaxed">
+                            Debido a esta estructura puramente repetitiva, son considerados los números "más difíciles de aproximar" mediante números racionales para cada valor de $n$.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen de aplicación -->
+            <div class="bg-gradient-to-r from-emerald-800 to-teal-900 text-white p-6 rounded-2xl shadow-lg space-y-2">
+                <h3 class="text-lg font-bold text-emerald-100 flex items-center gap-2">
+                    <span>✨</span> Curiosidad de la Proporción Áurea ($n=1$) y la de Plata ($n=2$)
+                </h3>
+                <p class="text-xs md:text-sm text-emerald-100/90 leading-relaxed">
+                    Mientras el número de oro ($\phi \approx 1.618$) aparece recurrentemente en la naturaleza (filotaxis de plantas, espirales de conchas) y en el arte, el número de plata ($\delta_S \approx 2.414$) determina la geometría exacta de octágonos regulares y estructuras arquitectónicas cuadradas y octogonales.
+                </p>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-gray-800 text-gray-400 py-6 text-center text-xs border-t border-gray-700">
+        <p>Descubridor de Números Metálicos • Basado en las constantes de la ecuación $x^2 - nx - 1 = 0$</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nSlider = document.getElementById('n-slider');
+            const nNumberInput = document.getElementById('n-number');
+            const nDisplay = document.getElementById('n-display');
+            const seqNVal = document.getElementById('seq-n-val');
+            
+            const termsCountSlider = document.getElementById('terms-count-slider');
+            const termsCountDisplay = document.getElementById('terms-count-display');
+
+            const equationDisplay = document.getElementById('equation-display');
+            const metalNameDisplay = document.getElementById('metal-name');
+            const metalValueDisplay = document.getElementById('metal-value');
+            const exactFormulaDisplay = document.getElementById('exact-formula');
+            const metalNoteDisplay = document.getElementById('metal-note');
+            
+            const sequenceTermsDisplay = document.getElementById('sequence-terms');
+            const sequenceRatioDisplay = document.getElementById('sequence-ratio');
+
+            const metalData = {
+                0: { name: "Número de Platino ⚪", note: "Caso límite $n=0$. Da como solución exacta $1$." },
+                1: { name: "Número de Oro (Áureo) 🥇", note: "Gobernador de la Sucesión de Fibonacci. Presente en el arte, arquitectura y biología." },
+                2: { name: "Número de Plata 🥈", note: "Gobernador de la Sucesión de Pell. Corresponde al diámetro exacto de un octágono regular de lado 1." },
+                3: { name: "Número de Bronce 🥉", note: "Constante asociada a la relación de recurrencia $S_k = 3S_{k-1} + S_{k-2}$." },
+                4: { name: "Número de Cobre ⛏️", note: "Curiosidad: es exactamente igual al cubo de la proporción áurea ($\phi^3 = 2 + \sqrt{5}$)." },
+                5: { name: "Número de Níquel 🪙", note: "Sucesión recurrente con factor 5. Su parte decimal coincide con la del Cobre." },
+                6: { name: "Número de Aluminio 🥫", note: "Ecuación $x^2 - 6x - 1 = 0$. Fórmula simplificada: $3 + \sqrt{10}$." },
+                7: { name: "Número de Hierro ⚔️", note: "Ecuación $x^2 - 7x - 1 = 0$. Representado por $[7; 7, 7, 7\dots]$ en fracción continua." },
+                8: { name: "Número de Estaño 🪨", note: "Ecuación $x^2 - 8x - 1 = 0$. Fórmula simplificada: $4 + \sqrt{17}$." },
+                9: { name: "Número de Plomo ⚓", note: "Ecuación $x^2 - 9x - 1 = 0$. Su valor aproximado es $9.10977\dots$" }
+            };
+
+            // Función helper para renderizar KaTeX en un elemento
+            function renderKatexElement(element, latexString, displayMode = false) {
+                if (window.katex) {
+                    try {
+                        katex.render(latexString, element, {
+                            displayMode: displayMode,
+                            throwOnError: false
+                        });
+                    } catch (e) {
+                        element.textContent = latexString;
+                    }
+                } else {
+                    element.textContent = latexString;
+                }
+            }
+
+            // Función global para cambiar de pantalla / etiqueta
+            window.switchScreen = function(screenId) {
+                document.querySelectorAll('.screen-content').forEach(screen => {
+                    screen.classList.remove('active');
+                });
+
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                const targetScreen = document.getElementById(screenId);
+                const targetBtn = document.getElementById('btn-' + screenId);
+
+                if (targetScreen) targetScreen.classList.add('active');
+                if (targetBtn) targetBtn.classList.add('active');
+
+                triggerAutoRender();
+            };
+
+            window.selectMetalFromTable = function(n) {
+                updateMetalNumber(n);
+                switchScreen('screen-calculator');
+            };
+
+            function triggerAutoRender() {
+                if (window.renderMathInElement) {
+                    renderMathInElement(document.body, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '$', right: '$', display: false}
+                        ],
+                        throwOnError: false
+                    });
+                }
+            }
+
+            function updateMetalNumber(n) {
+                n = Math.max(0, parseInt(n) || 0);
+                
+                nSlider.value = n > 10 ? 10 : n;
+                nNumberInput.value = n;
+                nDisplay.textContent = n;
+                if (seqNVal) seqNVal.textContent = n;
+
+                // Ecuación visual con LaTeX
+                let eqLatex = "";
+                if (n === 0) {
+                    eqLatex = "x^2 - 1 = 0";
+                } else if (n === 1) {
+                    eqLatex = "x^2 - x - 1 = 0";
+                } else {
+                    eqLatex = `x^2 - ${n}x - 1 = 0`;
+                }
+                renderKatexElement(equationDisplay, eqLatex, true);
+
+                // Cálculo del valor exacto y decimal
+                const discriminante = (n * n) + 4;
+                const valorDecimal = (n + Math.sqrt(discriminante)) / 2;
+
+                metalValueDisplay.textContent = valorDecimal.toFixed(7) + "...";
+
+                // Fórmula exacta LaTeX
+                let exactFormulaLatex = "";
+                if (n === 0) {
+                    exactFormulaLatex = "1";
+                } else if (n % 2 === 0) {
+                    const k = n / 2;
+                    const valRaiz = (k * k) + 1;
+                    exactFormulaLatex = `${k} + \\sqrt{${valRaiz}}`;
+                } else {
+                    exactFormulaLatex = `\\frac{${n} + \\sqrt{${discriminante}}}{2}`;
+                }
+                renderKatexElement(exactFormulaDisplay, exactFormulaLatex, false);
+
+                // Nombre y notas con renderizado seguro de LaTeX
+                if (metalData[n]) {
+                    metalNameDisplay.textContent = metalData[n].name;
+                    metalNoteDisplay.innerHTML = metalData[n].note;
+                } else {
+                    metalNameDisplay.textContent = `${n}º Número Metálico`;
+                    metalNoteDisplay.innerHTML = `Número metálico correspondiente a $n = ${n}$. Fracción continua $[${n}; ${n}, ${n}, \dots]$`;
+                }
+
+                // Generar Sucesión Recurrente S_k = n*S_{k-1} + S_{k-2} con la cantidad seleccionada de términos
+                const numTerms = parseInt(termsCountSlider.value) || 12;
+                generateSequence(n, valorDecimal, numTerms);
+            }
+
+            function generateSequence(n, targetValue, numTerms = 12) {
+                // Forzar límite entre 5 y 20
+                numTerms = Math.min(20, Math.max(5, numTerms));
+                
+                let terms = [0, 1];
+                for (let i = 2; i < numTerms; i++) {
+                    let nextTerm = n * terms[i - 1] + terms[i - 2];
+                    terms.push(nextTerm);
+                }
+
+                // Renderizar términos con insignias visuales
+                sequenceTermsDisplay.innerHTML = terms.map((t, idx) => `
+                    <div class="px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg shadow-sm flex items-center gap-1.5">
+                        <span class="text-xs text-emerald-600 font-sans font-semibold">S<sub>${idx}</sub>:</span>
+                        <span class="font-bold text-emerald-950">${t.toLocaleString()}</span>
+                    </div>
+                `).join('');
+
+                // Calcular cociente entre el último término y el penúltimo
+                const lastIdx = terms.length - 1;
+                const prevIdx = lastIdx - 1;
+                const lastTerm = terms[lastIdx];
+                const prevTerm = terms[prevIdx];
+                
+                if (prevTerm !== 0) {
+                    const lastRatio = lastTerm / prevTerm;
+                    sequenceRatioDisplay.innerHTML = `
+                        Cociente $\\frac{S_{${lastIdx}}}{S_{${prevIdx}}} = \\frac{${lastTerm.toLocaleString()}}{${prevTerm.toLocaleString()}} = ${lastRatio.toFixed(7)}$ <br>
+                        <span class="text-xs text-emerald-700 font-normal">Valor real del Número Metálico: ${targetValue.toFixed(7)}</span>
+                    `;
+                } else {
+                    sequenceRatioDisplay.textContent = "1.0000000";
+                }
+
+                triggerAutoRender();
+            }
+
+            // Listeners para slider e input
+            nSlider.addEventListener('input', (e) => updateMetalNumber(e.target.value));
+            nNumberInput.addEventListener('input', (e) => updateMetalNumber(e.target.value));
+
+            // Listener para el número de términos (5 a 20)
+            termsCountSlider.addEventListener('input', (e) => {
+                const termsCount = parseInt(e.target.value);
+                termsCountDisplay.textContent = termsCount;
+                const currentN = parseInt(nNumberInput.value) || 1;
+                const discriminante = (currentN * currentN) + 4;
+                const valorDecimal = (currentN + Math.sqrt(discriminante)) / 2;
+                generateSequence(currentN, valorDecimal, termsCount);
+            });
+
+            // Verificar KaTeX e inicializar
+            const checkKaTeX = setInterval(() => {
+                if (window.katex && window.renderMathInElement) {
+                    clearInterval(checkKaTeX);
+                    triggerAutoRender();
+                    updateMetalNumber(1);
+                }
+            }, 100);
+
+            updateMetalNumber(1);
+        });
+    </script>
+</body>
+</html>

@@ -10,7 +10,7 @@
  *  - Solo cachea recursos de esta aplicación (mismo scope) y los CDNs
  *    que usa (Tailwind, KaTeX, Google Fonts). Ignora todo lo demás.
  */
-const CACHE_NAME = 'numeros-metalicos-v1';
+const CACHE_NAME = 'numeros-metalicos-v2';
 
 // Recursos propios de la app (rutas relativas al scope del SW)
 const APP_ASSETS = [

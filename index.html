@@ -9,6 +9,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Números Metálicos">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <title>Descubridor de Números Metálicos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -663,5 +665,14 @@
             updateMetalNumber(1);
         });
     </script>
+<script>
+  // Registro del Service Worker de esta app: scope './' -> solo controla
+  // las páginas de /NumerosMetalicos/, nunca el portal ni otras apps.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(console.log);
+    });
+  }
+</script>
 </body>
 </html>

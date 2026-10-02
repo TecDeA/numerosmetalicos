@@ -2,7 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#065f46">
+    <meta name="description" content="Explora las constantes metálicas, sus ecuaciones cuadráticas y sus sucesiones asociadas.">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Números Metálicos">
     <title>Descubridor de Números Metálicos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -81,9 +87,42 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
         }
 
-        .tooltip:hover .tooltiptext {
+        .tooltip:hover .tooltiptext,
+        .tooltip:focus .tooltiptext,
+        .tooltip:focus-within .tooltiptext,
+        .tooltip:active .tooltiptext {
             visibility: visible;
             opacity: 1;
+        }
+
+        /* Soporte multiplataforma: táctil, áreas seguras (notch) y comportamiento nativo */
+        button, input[type="range"], .tab-btn {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        header {
+            padding-top: calc(1.5rem + env(safe-area-inset-top));
+            padding-bottom: 1.5rem;
+            padding-left: calc(1.5rem + env(safe-area-inset-left));
+            padding-right: calc(1.5rem + env(safe-area-inset-right));
+        }
+
+        footer {
+            padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+        }
+
+        .tooltip .tooltiptext {
+            width: max-content;
+            max-width: min(260px, 80vw);
+            left: 50%;
+            transform: translateX(-50%);
+            margin-left: 0;
+        }
+
+        /* Inputs con tamaño de fuente >=16px para evitar el zoom automático en iOS */
+        input[type="number"] {
+            font-size: 1.125rem;
         }
     </style>
 </head>
@@ -93,12 +132,12 @@
     <header class="bg-emerald-800 text-white p-6 shadow-lg">
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             <div class="text-center md:text-left">
-                <h1 class="text-3xl font-bold tracking-tight">Descubridor de Números Metálicos</h1>
-                <p class="text-emerald-200 text-sm mt-1">Explora las constantes metálicas, ecuaciones y sus sucesiones asociadas</p>
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Descubridor de Números Metálicos</h1>
+                <p class="text-emerald-200 text-xs sm:text-sm mt-1">Explora las constantes metálicas, ecuaciones y sus sucesiones asociadas</p>
             </div>
-            <div class="flex items-center gap-2 bg-emerald-900/60 px-4 py-2 rounded-full border border-emerald-700/50">
-                <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span class="text-xs font-semibold text-emerald-100 tracking-wider"><span class="uppercase">Ecuación:</span> $x^2 - nx - 1 = 0$</span>
+            <div class="flex items-center gap-2 bg-emerald-900/60 px-4 py-2 rounded-full border border-emerald-700/50 max-w-full">
+                <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                <span class="text-xs font-semibold text-emerald-100 tracking-wider overflow-x-auto whitespace-nowrap"><span class="uppercase">Ecuación:</span> $x^2 - nx - 1 = 0$</span>
             </div>
         </div>
     </header>
@@ -106,7 +145,7 @@
     <!-- Barra de Navegación por Pantallas (Etiquetas) -->
     <nav class="bg-emerald-900 sticky top-0 z-30 shadow-md border-t border-emerald-700/40">
         <div class="max-w-5xl mx-auto px-4">
-            <div class="flex overflow-x-auto space-x-2 py-3 scrollbar-none text-sm font-medium" id="tab-container">
+                <div class="flex overflow-x-auto space-x-2 py-3 scrollbar-none text-sm font-medium" id="tab-container">
                 <button onclick="switchScreen('screen-calculator')" id="btn-screen-calculator" class="tab-btn active flex items-center gap-2 px-4 py-2.5 rounded-lg text-emerald-100 hover:bg-emerald-800/70 whitespace-nowrap">
                     <span>🧮</span>
                     <span>Calculadora Interactivas</span>
@@ -212,7 +251,7 @@
                             Así como el Número de Oro ($n=1$) da origen a la sucesión de Fibonacci, cada valor de $n$ crea su propia sucesión recurrente.
                         </p>
                     </div>
-                    <div class="bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 text-emerald-900 text-xs font-bold font-mono">
+                    <div class="bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 text-emerald-900 text-xs font-bold font-mono max-w-full overflow-x-auto">
                         Fórmula: $S_k = n \cdot S_{k-1} + S_{k-2}$
                     </div>
                 </div>
@@ -273,7 +312,7 @@
 
             <div class="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left text-gray-600">
+                    <table class="w-full min-w-[640px] text-sm text-left text-gray-600">
                         <thead class="text-xs text-emerald-900 uppercase bg-emerald-100/70 border-b border-emerald-200">
                             <tr>
                                 <th scope="col" class="px-4 py-3.5 font-mono text-center">n</th>
@@ -575,7 +614,7 @@
                 sequenceTermsDisplay.innerHTML = terms.map((t, idx) => `
                     <div class="px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg shadow-sm flex items-center gap-1.5">
                         <span class="text-xs text-emerald-600 font-sans font-semibold">S<sub>${idx}</sub>:</span>
-                        <span class="font-bold text-emerald-950">${t.toLocaleString()}</span>
+                        <span class="font-bold text-emerald-950 break-all">${t.toLocaleString()}</span>
                     </div>
                 `).join('');
 

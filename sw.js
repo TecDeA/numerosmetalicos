@@ -10,15 +10,19 @@
  *  - Solo cachea recursos de esta aplicación (mismo scope) y los CDNs
  *    que usa (Tailwind, KaTeX, Google Fonts). Ignora todo lo demás.
  */
-const CACHE_NAME = 'numeros-metalicos-v1.4';
-
-/*
- * Versión de la aplicación derivada automáticamente del nombre del caché.
- * El banner de la página la pide al SW con postMessage y la muestra en un chip.
- * Basta con cambiar CACHE_NAME (p. ej. a 'numeros-metalicos-v3') para que el
- * chip se actualice solo.
- */
-const APP_VERSION = CACHE_NAME.split('-').pop();
+/* =========================================================================
+ *  Metadatos de versión (semver). Edita aquí en cada release.
+ *  - APP_VERSION: cadena de versión mostrada en el chip del header.
+ *    Se envía tal cual a la página, así que ya puede incluir la 'v' si
+ *    quieres (p. ej. 'v1.4'). La página NO añade ningún prefijo.
+ *  - CACHE_NAME: solo se usa para invalidar el caché. Si cambias los
+ *    assets, cambia también este nombre (p. ej. 'numeros-metalicos-v3')
+ *    para que los usuarios reciban la nueva versión sin tener que
+ *    borrar el caché manualmente.
+ * ======================================================================= */
+const APP_VERSION = 'v1.5';
+const APP_BUILD   = '2026-10-14';
+const CACHE_NAME  = 'numeros-metalicos-v3';
 
 // Recursos propios de la app (rutas relativas al scope del SW)
 const APP_ASSETS = [
@@ -107,18 +111,47 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-/*
- * Responde a la página con la versión de la app. El chip del banner
- * la usa para mostrarse dinámicamente.
- */
+/* =========================================================================
+ *  Comunicación con la página (postMessage).
+ *  - GET_APP_VERSION: responde con la versión + build + cacheName. Lo
+ *    usa el chip dinámico del header del index.html.
+ *  - SKIP_WAITING:    permite a la página forzar la activación del
+ *    nuevo SW sin esperar a que se cierren todas las pestañas.
+ *  - PURGE_CACHE:     borra todos los cachés 'numeros-metalicos-*'.
+ *    Útil para depuración desde DevTools o un botón "Reset caché".
+ * ======================================================================= */
 self.addEventListener('message', (event) => {
-  const data = event.data;
-  if (data && data.type === 'GET_APP_VERSION') {
-    const payload = { type: 'APP_VERSION', version: APP_VERSION, cacheName: CACHE_NAME };
+  const data = event.data || {};
+
+  if (data.type === 'GET_APP_VERSION') {
+    const payload = {
+      type: 'APP_VERSION',
+      version: APP_VERSION,
+      build: APP_BUILD,
+      cacheName: CACHE_NAME
+    };
     if (event.ports && event.ports.length > 0) {
       event.ports[0].postMessage(payload);
     } else if (event.source) {
       event.source.postMessage(payload);
     }
+    return;
+  }
+
+  if (data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
+
+  if (data.type === 'PURGE_CACHE') {
+    event.waitUntil(
+      caches.keys()
+        .then((keys) => Promise.all(
+          keys.filter((k) => k.startsWith('numeros-metalicos-'))
+              .map((k) => caches.delete(k))
+        ))
+        .then(() => (event.source && event.source.postMessage({ type: 'CACHE_PURGED' })))
+    );
+    return;
   }
 });

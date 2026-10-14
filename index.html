@@ -980,7 +980,7 @@
         'display:flex','align-items:center','gap:0.75rem','font-family:Inter,sans-serif'
       ].join(';');
       toast.innerHTML = '<span>Nueva versión disponible'
-        + (newVersion ? ' (<strong>v' + newVersion + '</strong>)' : '')
+        + (newVersion ? ' (<strong>' + newVersion + '</strong>)' : '')
         + '.</span>';
       const btn = document.createElement('button');
       btn.textContent = 'Recargar';
@@ -1025,10 +1025,13 @@
 
     const renderVersion = (data) => {
       if (!data || !data.version) return;
-      chip.textContent = 'v' + data.version;
+      // El SW envía la versión tal cual la define APP_VERSION, ya con la
+      // 'v' por delante (p. ej. 'v1.4'). NO añadir aquí ningún prefijo,
+      // o saldría duplicado ('vv1.4').
+      chip.textContent = data.version;
       const buildStr = data.build ? ' (build ' + data.build + ')' : '';
       const cacheStr = data.cacheName ? ' · caché: ' + data.cacheName : '';
-      chip.title = 'Versión de la app: v' + data.version + buildStr + cacheStr;
+      chip.title = 'Versión de la app: ' + data.version + buildStr + cacheStr;
       chip.removeAttribute('aria-busy');
     };
 

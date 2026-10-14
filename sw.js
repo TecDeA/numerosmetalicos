@@ -12,6 +12,14 @@
  */
 const CACHE_NAME = 'numeros-metalicos-v2';
 
+/*
+ * Versión de la aplicación derivada automáticamente del nombre del caché.
+ * El banner de la página la pide al SW con postMessage y la muestra en un chip.
+ * Basta con cambiar CACHE_NAME (p. ej. a 'numeros-metalicos-v3') para que el
+ * chip se actualice solo.
+ */
+const APP_VERSION = CACHE_NAME.split('-').pop();
+
 // Recursos propios de la app (rutas relativas al scope del SW)
 const APP_ASSETS = [
   './',
@@ -97,4 +105,20 @@ self.addEventListener('fetch', (event) => {
       return cached || fetchPromise;
     })
   );
+});
+
+/*
+ * Responde a la página con la versión de la app. El chip del banner
+ * la usa para mostrarse dinámicamente.
+ */
+self.addEventListener('message', (event) => {
+  const data = event.data;
+  if (data && data.type === 'GET_APP_VERSION') {
+    const payload = { type: 'APP_VERSION', version: APP_VERSION, cacheName: CACHE_NAME };
+    if (event.ports && event.ports.length > 0) {
+      event.ports[0].postMessage(payload);
+    } else if (event.source) {
+      event.source.postMessage(payload);
+    }
+  }
 });

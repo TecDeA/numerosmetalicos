@@ -10,7 +10,7 @@
  *  - Solo cachea recursos de esta aplicación (mismo scope) y los CDNs
  *    que usa (Tailwind, KaTeX, Google Fonts). Ignora todo lo demás.
  */
-const CACHE_NAME = 'numeros-metalicos-v3';
+const CACHE_NAME = 'numeros-metalicos-v1.3';
 
 /*
  * Versión de la aplicación derivada automáticamente del nombre del caché.

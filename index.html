@@ -347,6 +347,7 @@
                     Descubridor de Números Metálicos
                     <span id="app-version-chip"
                           class="align-middle text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-100 border border-emerald-300/30 tracking-wider"
+                          role="status" aria-live="polite"
                           title="Versión de la aplicación (desde el Service Worker)">v…</span>
                 </h1>
                 <p class="text-emerald-200 text-xs sm:text-sm mt-1">Explora las constantes metálicas, ecuaciones y sus sucesiones asociadas</p>
@@ -951,41 +952,92 @@
         });
     </script>
 <script>
-  // Registro del Service Worker de esta app: scope './' -> solo controla
-  // las páginas de /NumerosMetalicos/, nunca el portal ni otras apps.
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(console.log);
-    });
-  }
+  /* ====================================================================
+   *  Registro del Service Worker y comunicación con la página.
+   *  - Registra './sw.js' con scope relativo (solo controla esta app).
+   *  - Pinta la versión del SW en el chip del header (#app-version-chip).
+   *  - Escucha UPDATE_AVAILABLE para mostrar un toast "Nueva versión".
+   * ==================================================================== */
 
-  /*
-   * Chip dinámico de versión: pregunta al Service Worker activo por
-   * la versión de la app y la pinta en #app-version-chip. Si no hay
-   * SW (p. ej. en navegadores sin soporte o en modo incógnito), se
-   * queda con el texto de marcador 'v…'.
-   */
   (function () {
+    if (!('serviceWorker' in navigator)) return;
+
+    let reg = null;
+
+    // --- Toast de actualización disponible --------------------------
+    let toastShown = false;
+    function showUpdateToast(newVersion) {
+      if (toastShown) return;
+      toastShown = true;
+      const toast = document.createElement('div');
+      toast.setAttribute('role', 'alert');
+      toast.style.cssText = [
+        'position:fixed','left:50%','bottom:calc(1rem + env(safe-area-inset-bottom))',
+        'transform:translateX(-50%)','z-index:1000',
+        'background:#065f46','color:#fff','padding:0.75rem 1rem',
+        'border-radius:0.75rem','box-shadow:0 10px 25px rgba(0,0,0,0.2)',
+        'font-size:0.875rem','max-width:min(90vw, 28rem)',
+        'display:flex','align-items:center','gap:0.75rem','font-family:Inter,sans-serif'
+      ].join(';');
+      toast.innerHTML = '<span>Nueva versión disponible'
+        + (newVersion ? ' (<strong>v' + newVersion + '</strong>)' : '')
+        + '.</span>';
+      const btn = document.createElement('button');
+      btn.textContent = 'Recargar';
+      btn.style.cssText = [
+        'background:#fff','color:#065f46','border:none','border-radius:0.5rem',
+        'padding:0.375rem 0.75rem','font-weight:600','cursor:pointer',
+        'font-size:0.8125rem','white-space:nowrap'
+      ].join(';');
+      btn.addEventListener('click', () => window.location.reload());
+      toast.appendChild(btn);
+      document.body.appendChild(toast);
+    }
+
+    // --- Mensajes entrantes desde el SW -----------------------------
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      const data = event.data || {};
+      if (data.type === 'UPDATE_AVAILABLE') {
+        // Hay un nuevo SW esperando. Si queremos, forzamos su activación.
+        try { reg && reg.waiting && reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) {}
+        showUpdateToast(data.version);
+      }
+    });
+
+    // --- Cuando el controlador cambia (se activó un nuevo SW), recargar
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
+
+    // --- Registrar el SW --------------------------------------------
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((r) => { reg = r; })
+        .catch(console.log);
+    });
+
+    // --- Chip dinámico de versión ----------------------------------
     const chip = document.getElementById('app-version-chip');
     if (!chip) return;
 
-    const renderVersion = (version) => {
-      if (!version) return;
-      chip.textContent = version;
-      chip.title = 'Versión de la aplicación (desde el Service Worker): ' + version;
+    const renderVersion = (data) => {
+      if (!data || !data.version) return;
+      chip.textContent = 'v' + data.version;
+      const buildStr = data.build ? ' (build ' + data.build + ')' : '';
+      const cacheStr = data.cacheName ? ' · caché: ' + data.cacheName : '';
+      chip.title = 'Versión de la app: v' + data.version + buildStr + cacheStr;
+      chip.removeAttribute('aria-busy');
     };
 
     const askSwForVersion = (controller) => {
-      if (!controller) {
-        // Sin controlador activo todavía: reintentar cuando asum el control.
-        return;
-      }
+      if (!controller) return;
       try {
         const channel = new MessageChannel();
         channel.port1.onmessage = (event) => {
-          if (event && event.data && event.data.version) {
-            renderVersion(event.data.version);
-          }
+          if (event && event.data) renderVersion(event.data);
         };
         controller.postMessage({ type: 'GET_APP_VERSION' }, [channel.port2]);
       } catch (err) {
@@ -993,21 +1045,17 @@
       }
     };
 
-    if (!('serviceWorker' in navigator)) return;
-
     const tryNow = () => {
       if (navigator.serviceWorker.controller) {
         askSwForVersion(navigator.serviceWorker.controller);
       } else {
-        // El SW está instalándose/activándose: esperar a que esté listo.
         navigator.serviceWorker.ready
-          .then((reg) => askSwForVersion(reg && reg.active))
+          .then((r) => askSwForVersion(r && r.active))
           .catch(() => {});
       }
     };
 
-    // Primer intento en cuanto carga, y reintentar si el controlador cambia
-    // (p. ej. tras una actualización del SW en una visita posterior).
+    chip.setAttribute('aria-busy', 'true');
     window.addEventListener('load', tryNow);
     navigator.serviceWorker.addEventListener('controllerchange', tryNow);
   })();

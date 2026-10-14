@@ -134,7 +134,12 @@
     <header class="bg-emerald-800 text-white p-6 shadow-lg">
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             <div class="text-center md:text-left">
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Descubridor de Números Metálicos</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight inline-flex items-center gap-2 flex-wrap justify-center md:justify-start">
+                    Descubridor de Números Metálicos
+                    <span id="app-version-chip"
+                          class="align-middle text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-100 border border-emerald-300/30 tracking-wider"
+                          title="Versión de la aplicación (desde el Service Worker)">v…</span>
+                </h1>
                 <p class="text-emerald-200 text-xs sm:text-sm mt-1">Explora las constantes metálicas, ecuaciones y sus sucesiones asociadas</p>
             </div>
             <div class="flex items-center gap-2 bg-emerald-900/60 px-4 py-2 rounded-full border border-emerald-700/50 max-w-full">
@@ -673,6 +678,59 @@
       navigator.serviceWorker.register('./sw.js').catch(console.log);
     });
   }
+
+  /*
+   * Chip dinámico de versión: pregunta al Service Worker activo por
+   * la versión de la app y la pinta en #app-version-chip. Si no hay
+   * SW (p. ej. en navegadores sin soporte o en modo incógnito), se
+   * queda con el texto de marcador 'v…'.
+   */
+  (function () {
+    const chip = document.getElementById('app-version-chip');
+    if (!chip) return;
+
+    const renderVersion = (version) => {
+      if (!version) return;
+      chip.textContent = version;
+      chip.title = 'Versión de la aplicación (desde el Service Worker): ' + version;
+    };
+
+    const askSwForVersion = (controller) => {
+      if (!controller) {
+        // Sin controlador activo todavía: reintentar cuando asum el control.
+        return;
+      }
+      try {
+        const channel = new MessageChannel();
+        channel.port1.onmessage = (event) => {
+          if (event && event.data && event.data.version) {
+            renderVersion(event.data.version);
+          }
+        };
+        controller.postMessage({ type: 'GET_APP_VERSION' }, [channel.port2]);
+      } catch (err) {
+        console.warn('No se pudo obtener la versión del SW:', err);
+      }
+    };
+
+    if (!('serviceWorker' in navigator)) return;
+
+    const tryNow = () => {
+      if (navigator.serviceWorker.controller) {
+        askSwForVersion(navigator.serviceWorker.controller);
+      } else {
+        // El SW está instalándose/activándose: esperar a que esté listo.
+        navigator.serviceWorker.ready
+          .then((reg) => askSwForVersion(reg && reg.active))
+          .catch(() => {});
+      }
+    };
+
+    // Primer intento en cuanto carga, y reintentar si el controlador cambia
+    // (p. ej. tras una actualización del SW en una visita posterior).
+    window.addEventListener('load', tryNow);
+    navigator.serviceWorker.addEventListener('controllerchange', tryNow);
+  })();
 </script>
 </body>
 </html>
